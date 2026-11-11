@@ -1,57 +1,846 @@
---:--:--
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Clock, Alarm and Timer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Share+Tech+Mono&family=Playfair+Display:wght@500;700&family=Poppins:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f3f6f4; --surface:#ffffff; --text:#14231d; --muted:#5b6b64; --accent:#0b7a5a; --on:#ffffff; --line:#cfdad4; --danger:#b3261e; --warnbg:#fff4d6; --warntx:#5c4400;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --bg:#0f1714; --surface:#17221d; --text:#e8f1ec; --muted:#9bb0a6; --accent:#3ddc9f; --on:#0f1714; --line:#2a3a33; --danger:#ff8a80; --warnbg:#3a3114; --warntx:#f5df9a; color-scheme:dark; }
+}
+:root[data-theme="dark"]{ --bg:#0f1714; --surface:#17221d; --text:#e8f1ec; --muted:#9bb0a6; --accent:#3ddc9f; --on:#0f1714; --line:#2a3a33; --danger:#ff8a80; --warnbg:#3a3114; --warntx:#f5df9a; color-scheme:dark; }
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;display:flex;justify-content:center;padding:20px 16px}
+main{width:100%;max-width:680px}
+.banner{background:var(--warnbg);color:var(--warntx);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:.92rem}
+.now{text-align:center;margin-bottom:18px}
+.now .t{font-size:clamp(2.6rem,13vw,5rem);font-weight:700;font-variant-numeric:tabular-nums;line-height:1.05}
+.now .d{color:var(--muted);margin-top:4px}
+.tabs{display:flex;gap:6px;margin-bottom:14px}
+.tabs button{flex:1;padding:10px 4px;border:1px solid var(--line);background:transparent;color:var(--text);border-radius:8px;font-size:.95rem;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--on);border-color:var(--accent);font-weight:600}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px}
+label{display:block;font-size:.9rem;color:var(--muted);margin-bottom:6px}
+input[type=text],input[type=time],input[type=number],input[type=datetime-local]{width:100%;padding:10px;font-size:1rem;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text)}
+.row{display:flex;gap:10px;align-items:flex-end}
+.row>div{flex:1;min-width:0}
+button.btn{padding:11px 16px;font-size:1rem;border-radius:8px;border:1px solid var(--accent);cursor:pointer;font-weight:600;background:var(--accent);color:var(--on)}
+button.ghost{background:transparent;color:var(--accent)}
+button.small{padding:6px 10px;font-size:.85rem}
+button.del{border-color:var(--danger);color:var(--danger);background:transparent}
+button:focus-visible,input:focus-visible,.tabs button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.hidden{display:none}
+.item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.item:first-child{border-top:0}
+.item .big{font-size:1.5rem;font-weight:600;font-variant-numeric:tabular-nums}
+.item .meta{color:var(--muted);font-size:.9rem}
+.empty{color:var(--muted);padding:8px 0}
+.clock{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px;text-align:center}
+.unit{border:1px solid var(--line);border-radius:12px;padding:14px 4px;background:var(--bg)}
+.unit b{display:block;font-size:clamp(1.6rem,8vw,2.8rem);font-variant-numeric:tabular-nums;line-height:1.1}
+.unit span{font-size:.85rem;color:var(--muted)}
+.msg{margin-top:10px;min-height:1.3em;font-weight:600}
+.msg.err{color:var(--danger)}
+.tools{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:10px;flex-wrap:wrap}
+.sw{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:.9rem;margin:0}
+.sw input{width:18px;height:18px}
+button:disabled{opacity:.45;cursor:not-allowed}
+.tabs{flex-wrap:wrap}
+.tabs button{flex:1 1 auto;padding:10px 8px}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
+.cal .wd{font-size:.8rem;color:var(--muted);padding:4px 0}
+.cal button.cd{aspect-ratio:1;min-height:40px;border:1px solid transparent;background:transparent;color:var(--text);border-radius:10px;font-size:1rem;cursor:pointer}
+.cal button.cd:hover{border-color:var(--line)}
+.cal button.cd.today{border-color:var(--accent);font-weight:700}
+.cal button.cd.sel{background:var(--accent);color:var(--on);border-color:var(--accent)}
+.calres{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.calres .hd{font-size:1.15rem;font-weight:600}
+.wt{text-align:center;font-size:clamp(2.2rem,11vw,4rem);font-weight:700;font-variant-numeric:tabular-nums;padding:10px 0}
+#ring{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
+#ring .box{background:var(--surface);border:2px solid var(--accent);border-radius:16px;padding:28px;text-align:center;max-width:360px;width:100%}
+#coolStage{--cbg:#0b1020;--cface:#121a33;--cink:#e8ecff;--caccent:#5ea1ff;--cglow:40;--csize:80;--cfont:"Orbitron","Segoe UI",system-ui,sans-serif;container-type:inline-size;background:var(--cbg);color:var(--cink);font-family:var(--cfont);border-radius:12px;padding:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;min-height:200px;transition:background .4s}
+#coolStage:fullscreen{border-radius:0;padding:0;min-height:100vh}
+#ccAnalog{width:min(calc(var(--csize) * 1%),80vh);aspect-ratio:1;height:auto;overflow:visible}
+#ccAnalog.small{width:min(calc(var(--csize) * .6%),50vh)}
+#ccHands{filter:drop-shadow(0 0 calc(var(--cglow) * .1px) var(--caccent))}
+#ccTime{color:var(--cink);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;line-height:1.1;text-shadow:0 0 calc(var(--cglow) * .5px) var(--caccent)}
+#ccTime small{font-size:.35em;margin-left:.3em;color:var(--caccent)}
+#ccDate{color:var(--cink);opacity:.75;font-size:clamp(.8rem,2.4cqw,1.4rem);letter-spacing:.08em}
+#coolSet summary{cursor:pointer;font-weight:600;padding:6px 0}
+#coolSet h4{margin:16px 0 6px;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+#coolSet label{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:8px 0;color:var(--text);font-size:.95rem}
+#coolSet select{width:55%;padding:7px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);font-size:.95rem}
+#coolSet input[type=range]{width:55%}
+#coolSet input[type=color]{width:56px;height:34px;border:1px solid var(--line);border-radius:8px;background:transparent;padding:2px}
+#coolSet input[type=checkbox]{width:20px;height:20px}
+.themes{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.themes button{height:44px;border-radius:10px;border:2px solid var(--line);cursor:pointer;font-size:.7rem;font-weight:600}
+.themes button[aria-pressed="true"]{border-color:var(--accent);outline:2px solid var(--accent)}
+#ring.hidden{display:none}
+#ring h2{margin:0 0 6px;font-size:1.6rem}
+#ring p{margin:0 0 18px;color:var(--muted);white-space:pre-line}
+#ring .btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+@keyframes pulse{50%{transform:scale(1.04)}}
+@media (prefers-reduced-motion:no-preference){#ring .box{animation:pulse 1s infinite}}
+</style>
+</head>
+<body>
+<main>
+  <div class="banner hidden" id="banner" role="status"></div>
 
-[ ] 12-hour format
+  <section class="now" aria-label="Current time">
+    <div class="t" id="nowT">--:--:--</div>
+    <div class="d" id="nowD"></div>
+  </section>
 
-Add a city or time zone
+  <div class="tabs" role="tablist">
+    <button role="tab" data-tab="world" aria-selected="true">World clock</button>
+    <button role="tab" data-tab="alarm" aria-selected="false">Alarm</button>
+    <button role="tab" data-tab="count" aria-selected="false">Countdown</button>
+    <button role="tab" data-tab="watch" aria-selected="false">Stopwatch</button>
+    <button role="tab" data-tab="cal" aria-selected="false">Calendar</button>
+    <button role="tab" data-tab="cool" aria-selected="false">Cool clock</button>
+  </div>
 
-Time
+  <section class="panel" id="tab-world">
+    <div class="tools">
+      <label class="sw"><input type="checkbox" id="h12"> 12-hour format</label>
+    </div>
+    <div class="row">
+      <div>
+        <label for="tzIn">Add a city or time zone</label>
+        <input type="text" id="tzIn" list="tzList" placeholder="e.g. Asia/Tokyo or Paris" autocomplete="off">
+        <datalist id="tzList"></datalist>
+      </div>
+      <button class="btn" id="tzAdd" style="flex:none">Add</button>
+    </div>
+    <div class="msg" id="tzMsg" role="status"></div>
+    <div id="worldList"></div>
+  </section>
 
-Label
+  <section class="panel hidden" id="tab-alarm">
+    <div class="row">
+      <div><label for="aTime">Time</label><input type="time" id="aTime" value="07:00"></div>
+      <div><label for="aLabel">Label</label><input type="text" id="aLabel" placeholder="Wake up" maxlength="40"></div>
+    </div>
+    <div class="tools" style="margin-top:12px">
+      <label class="sw"><input type="checkbox" id="aRepeat"> Repeat every day</label>
+      <div style="display:flex;gap:8px">
+        <button class="btn ghost small" id="aTest">Test sound</button>
+        <button class="btn" id="aAdd">Set alarm</button>
+      </div>
+    </div>
+    <div class="msg" id="aMsg" role="status"></div>
+    <div id="alarmList"></div>
+    <p style="color:var(--muted);font-size:.85rem;margin:10px 0 0">Alarms ring while this page is open. Keep the tab open and your device’s sound on.</p>
+  </section>
 
-[ ] Repeat every day
+  <section class="panel hidden" id="tab-count">
+    <div class="tools">
+      <div style="display:flex;gap:8px">
+        <button class="btn small" id="cmDate">Date and time</button>
+        <button class="btn ghost small" id="cmDur">Duration</button>
+      </div>
+    </div>
+    <div id="cpDate">
+      <label for="cTarget">Target date and time</label>
+      <input type="datetime-local" id="cTarget">
+    </div>
+    <div id="cpDur" class="hidden">
+      <div class="row">
+        <div><label for="cH">Hours</label><input type="number" id="cH" min="0" max="9999" value="0"></div>
+        <div><label for="cM">Minutes</label><input type="number" id="cM" min="0" max="59" value="5"></div>
+        <div><label for="cS">Seconds</label><input type="number" id="cS" min="0" max="59" value="0"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button class="btn" id="cStart" style="flex:1">Start</button>
+      <button class="btn ghost" id="cReset" style="flex:1">Reset</button>
+    </div>
+    <div class="msg" id="cLabel" role="status"></div>
+    <div class="clock">
+      <div class="unit"><b id="cd">00</b><span>days</span></div>
+      <div class="unit"><b id="ch">00</b><span>hours</span></div>
+      <div class="unit"><b id="cm">00</b><span>minutes</span></div>
+      <div class="unit"><b id="cs">00</b><span>seconds</span></div>
+    </div>
+  </section>
+  <section class="panel hidden" id="tab-watch">
+    <div class="wt" id="swTime">00:00.00</div>
+    <div style="display:flex;gap:10px;margin-top:6px">
+      <button class="btn" id="swStart" style="flex:1">Start</button>
+      <button class="btn ghost" id="swLap" style="flex:1" disabled>Lap</button>
+      <button class="btn ghost" id="swReset" style="flex:1" disabled>Reset</button>
+    </div>
+    <div id="swLaps" style="margin-top:10px"></div>
+  </section>
+  <section class="panel hidden" id="tab-cal">
+    <div class="tools">
+      <button class="btn ghost small" id="calPrev" aria-label="Previous month">‹ Prev</button>
+      <b id="calTitle" aria-live="polite"></b>
+      <button class="btn ghost small" id="calNext" aria-label="Next month">Next ›</button>
+    </div>
+    <div class="cal" id="calGrid"></div>
+    <div class="row" style="margin-top:14px">
+      <div><label for="calJump">Date</label><input type="date" id="calJump"></div>
+      <div><label for="calTime">Time</label><input type="time" id="calTime" value="12:00"></div>
+      <button class="btn ghost" id="calToday" style="flex:none">Today</button>
+    </div>
+    <div class="calres" id="calOut"></div>
+    <div style="margin-top:12px"><button class="btn" id="calCount">Count down to this time</button></div>
+    <div class="msg" id="calMsg" role="status"></div>
+  </section>
+  <section class="panel hidden" id="tab-cool">
+    <div id="coolStage">
+      <svg id="ccAnalog" viewBox="0 0 200 200" role="img" aria-label="Analog clock">
+        <g id="ccFace"></g>
+        <g id="ccHands" stroke-linecap="round">
+          <line id="ccH" x1="100" y1="106" x2="100" y2="56" stroke="var(--cink)"/>
+          <line id="ccM" x1="100" y1="108" x2="100" y2="30" stroke="var(--cink)"/>
+          <line id="ccS" x1="100" y1="116" x2="100" y2="22" stroke="var(--caccent)" stroke-width="2"/>
+          <circle cx="100" cy="100" r="5" fill="var(--caccent)"/>
+          <circle cx="100" cy="100" r="2" fill="var(--cface)"/>
+        </g>
+      </svg>
+      <div id="ccDigital"><div id="ccTime"></div><div id="ccDate"></div></div>
+    </div>
+    <details id="coolSet" open style="margin-top:14px">
+      <summary>Customize appearance</summary>
+      <h4>Theme</h4>
+      <div class="themes" id="ccThemes"></div>
+      <div style="margin-top:10px"><button class="btn ghost small" id="ccRand">Surprise me</button></div>
+      <h4>Layout</h4>
+      <label>Clock type <select data-cc="mode"><option value="analog">Analog</option><option value="digital">Digital</option><option value="both">Both</option></select></label>
+      <label>Font <select data-cc="font"><option value="orbitron">Orbitron (futuristic)</option><option value="mono">Share Tech Mono</option><option value="serif">Playfair (elegant)</option><option value="sans">Poppins (clean)</option></select></label>
+      <label>Size <input type="range" data-cc="size" min="35" max="100" step="1"></label>
+      <h4>Colors</h4>
+      <label>Background <input type="color" data-cc="bg"></label>
+      <label>Clock face <input type="color" data-cc="face"></label>
+      <label>Text and hands <input type="color" data-cc="ink"></label>
+      <label>Accent <input type="color" data-cc="accent"></label>
+      <label>Glow <input type="range" data-cc="glow" min="0" max="100" step="1"></label>
+      <h4>Analog</h4>
+      <label>Numerals <select data-cc="numerals"><option value="numbers">Numbers</option><option value="roman">Roman</option><option value="none">None</option></select></label>
+      <label>Tick marks <select data-cc="ticks"><option value="lines">Lines</option><option value="dots">Dots</option><option value="none">None</option></select></label>
+      <label>Hand thickness <input type="range" data-cc="hand" min="2" max="9" step="0.5"></label>
+      <label>Smooth seconds hand <input type="checkbox" data-cc="smooth"></label>
+      <h4>Digital</h4>
+      <label>Show seconds <input type="checkbox" data-cc="seconds"></label>
+      <label>12-hour format <input type="checkbox" data-cc="h12"></label>
+      <label>Show date <input type="checkbox" data-cc="date"></label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+        <button class="btn small" id="ccFs">Fullscreen</button>
+        <button class="btn ghost small" id="ccReset">Reset appearance</button>
+      </div>
+      <div class="msg" id="ccMsg" role="status"></div>
+    </details>
+  </section>
+</main>
 
-Alarms ring while this page is open. Keep the tab open and your device’s sound on.
+<div id="ring" class="hidden" role="alertdialog" aria-labelledby="ringT">
+  <div class="box">
+    <h2 id="ringT">Alarm</h2>
+    <p id="ringS"></p>
+    <div class="btns">
+      <button class="btn ghost" id="snooze">Snooze 5 min</button>
+      <button class="btn" id="stop">Stop</button>
+    </div>
+  </div>
+</div>
 
-Target date and time
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var pad = function(n){ return String(n).padStart(2,"0"); };
+  function esc(s){ return String(s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+  function validTz(z){ try { new Intl.DateTimeFormat("en-US", { timeZone: z }); return typeof z === "string"; } catch(e){ return false; } }
+  function setMsg(id, text, isErr){ var el = $(id); el.textContent = text; el.classList.toggle("err", !!isErr); }
 
-Hours
+  var localTz = "UTC";
+  try { var rz = Intl.DateTimeFormat().resolvedOptions().timeZone; if (rz && validTz(rz)) localTz = rz; } catch(e){}
 
-Minutes
+  /* ---------- storage (safe, validated) ---------- */
+  var storageOk = true;
+  function load(k, def){ try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : def; } catch(e){ return def; } }
+  function save(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){ storageOk = false; } }
 
-Seconds
+  var zones = load("zones", ["America/New_York","Europe/London","Asia/Dubai","Asia/Tokyo","Australia/Sydney"]);
+  zones = Array.isArray(zones) ? zones.filter(validTz) : [];
+  var alarms = load("alarms", []);
+  alarms = Array.isArray(alarms) ? alarms.filter(function(a){ return a && /^\d{2}:\d{2}$/.test(a.time); }).map(function(a){
+    return { id: a.id || Date.now() + Math.random(), time: a.time, label: String(a.label || "Alarm").slice(0,40), on: a.on !== false, repeat: !!a.repeat, snooze: !!a.snooze };
+  }) : [];
+  var h12 = load("h12", false) === true;
 
-**00**days
+  /* ---------- sound ---------- */
+  var ctx = null, soundTimer = null;
+  function initAudio(){
+    try {
+      var C = window.AudioContext || window.webkitAudioContext;
+      if (!ctx && C) ctx = new C();
+      if (ctx && ctx.state === "suspended") ctx.resume();
+    } catch(e){}
+  }
+  function audioOn(){ return !!ctx && ctx.state === "running"; }
+  ["click","keydown","touchstart"].forEach(function(ev){ document.addEventListener(ev, initAudio, { passive: true }); });
 
-**00**hours
+  function beepBurst(){
+    if (!audioOn()) return;
+    try {
+      var t = ctx.currentTime;
+      for (var i = 0; i < 3; i++){
+        var o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = "square"; o.frequency.value = 880;
+        g.gain.setValueAtTime(0.0001, t + i*0.3);
+        g.gain.exponentialRampToValueAtTime(0.18, t + i*0.3 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + i*0.3 + 0.22);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(t + i*0.3); o.stop(t + i*0.3 + 0.25);
+      }
+    } catch(e){}
+  }
+  function startSound(){ initAudio(); stopSound(); beepBurst(); soundTimer = setInterval(beepBurst, 1400); }
+  function stopSound(){ if (soundTimer){ clearInterval(soundTimer); soundTimer = null; } }
 
-**00**minutes
+  /* ---------- ringing overlay ---------- */
+  var ringList = [], flashTimer = null, baseTitle = document.title;
+  function ring(title, sub, label, snoozable){
+    ringList.push({ title: title, sub: sub, label: label, snoozable: snoozable });
+    var n = ringList.length;
+    $("ringT").textContent = n === 1 ? title : n + " alerts";
+    $("ringS").textContent = n === 1 ? sub : ringList.map(function(x){ return x.title + ": " + x.sub; }).join("\n");
+    $("snooze").classList.toggle("hidden", !ringList.some(function(x){ return x.snoozable; }));
+    $("ring").classList.remove("hidden");
+    startSound();
+    try { if (navigator.vibrate) navigator.vibrate([400,200,400,200,400]); } catch(e){}
+    if (!flashTimer){
+      var on = false;
+      flashTimer = setInterval(function(){ on = !on; document.title = on ? "⏰ " + title : baseTitle; }, 1000);
+    }
+    $("stop").focus();
+  }
+  function closeRing(){
+    stopSound();
+    if (flashTimer){ clearInterval(flashTimer); flashTimer = null; }
+    document.title = baseTitle;
+    $("ring").classList.add("hidden");
+    ringList = [];
+  }
+  $("stop").onclick = closeRing;
+  $("snooze").onclick = function(){
+    var d = new Date(Date.now() + 5*60000), hm = pad(d.getHours()) + ":" + pad(d.getMinutes());
+    ringList.forEach(function(x){
+      if (x.snoozable) alarms.push({ id: Date.now() + Math.random(), time: hm, label: x.label, on: true, repeat: false, snooze: true });
+    });
+    save("alarms", alarms); renderAlarms(); closeRing();
+  };
+  document.addEventListener("keydown", function(e){
+    if (e.key === "Escape" && !$("ring").classList.contains("hidden")) closeRing();
+  });
 
-**00**seconds
+  /* ---------- tabs ---------- */
+  var tabs = document.querySelectorAll(".tabs button");
+  tabs.forEach(function(b){
+    b.onclick = function(){
+      tabs.forEach(function(x){ x.setAttribute("aria-selected", x === b ? "true" : "false"); });
+      ["world","alarm","count","watch","cal","cool"].forEach(function(n){ $("tab-"+n).classList.toggle("hidden", n !== b.dataset.tab); });
+    };
+  });
 
-00:00.00
+  /* ---------- time formatting ---------- */
+  function fmtTime(date, tz, withSec){
+    return new Intl.DateTimeFormat(undefined, { timeZone: tz, hour: "2-digit", minute: "2-digit", second: withSec ? "2-digit" : undefined, hourCycle: h12 ? "h12" : "h23" }).format(date);
+  }
+  function fmtDate(date, tz){
+    return new Intl.DateTimeFormat(undefined, { timeZone: tz, weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(date);
+  }
+  function wall(date, tz){
+    var p = {};
+    new Intl.DateTimeFormat("en-US", { timeZone: tz, hourCycle: "h23", year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric" })
+      .formatToParts(date).forEach(function(x){ p[x.type] = +x.value; });
+    return Date.UTC(p.year, p.month - 1, p.day, p.hour % 24, p.minute);
+  }
+  function cityName(tz){ return tz.split("/").pop().replace(/_/g, " "); }
+  function fmtHM(t){
+    var p = t.split(":"), d = new Date(); d.setHours(+p[0], +p[1], 0, 0);
+    return new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit", hourCycle: h12 ? "h12" : "h23" }).format(d);
+  }
 
-Date
+  /* ---------- world clock ---------- */
+  var tzList = [];
+  try { tzList = Intl.supportedValuesOf("timeZone"); } catch(e){}
+  if (!tzList || !tzList.length){
+    tzList = ["UTC","America/New_York","America/Los_Angeles","America/Sao_Paulo","Europe/London","Europe/Paris","Africa/Cairo","Asia/Dubai","Asia/Kolkata","Asia/Jakarta","Asia/Singapore","Asia/Tokyo","Australia/Sydney","Pacific/Auckland"];
+  }
+  $("tzList").innerHTML = tzList.map(function(z){ return '<option value="' + esc(z) + '">'; }).join("");
 
-Time
+  function addZone(){
+    var raw = $("tzIn").value.trim();
+    if (!raw){ setMsg("tzMsg", "Type a city or time zone first, like Asia/Tokyo or Paris.", true); return; }
+    var low = raw.toLowerCase().replace(/_/g, " ");
+    var match = tzList.find(function(z){ return z.toLowerCase().replace(/_/g," ") === low; }) ||
+                tzList.find(function(z){ return cityName(z).toLowerCase() === low; });
+    if (!match && validTz(raw) && raw.indexOf(" ") === -1) match = raw;
+    if (!match){ setMsg("tzMsg", "No time zone found for “" + raw + "”. Pick one from the suggestions, or try a larger nearby city.", true); return; }
+    if (match === localTz || zones.indexOf(match) !== -1){ setMsg("tzMsg", cityName(match) + " is already in your list.", true); return; }
+    if (zones.length >= 30){ setMsg("tzMsg", "You can add up to 30 time zones. Remove one first.", true); return; }
+    zones.push(match); save("zones", zones); $("tzIn").value = ""; setMsg("tzMsg", "Added " + cityName(match) + ".", false);
+    renderWorld();
+  }
+  $("tzAdd").onclick = addZone;
+  $("tzIn").addEventListener("keydown", function(e){ if (e.key === "Enter") addZone(); });
+  $("h12").checked = h12;
+  $("h12").onchange = function(){ h12 = $("h12").checked; save("h12", h12); renderWorld(); renderAlarms(); tick(); };
 
-Customize appearance
+  function offTxt(diff){
+    if (diff === 0) return "Same time as you";
+    var a = Math.abs(diff), h = Math.floor(a), m = Math.round((a - h) * 60);
+    return (diff > 0 ? "+" : "−") + h + " h" + (m ? " " + m + " min" : "") + " from you";
+  }
+  function renderWorld(){
+    var list = [localTz].concat(zones.filter(function(z){ return z !== localTz; }));
+    var now = new Date(), base = wall(now, localTz), l = new Date(base);
+    $("worldList").innerHTML = list.map(function(tz){
+      var w = wall(now, tz), diff = (w - base) / 3600000, d = new Date(w);
+      var dd = Math.round((Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) - Date.UTC(l.getUTCFullYear(), l.getUTCMonth(), l.getUTCDate())) / 86400000);
+      var dayTxt = dd === 0 ? "Today" : dd > 0 ? "Tomorrow" : "Yesterday";
+      var isLocal = tz === localTz;
+      return '<div class="item"><div><div style="font-weight:600">' + esc(cityName(tz)) + '</div><div class="meta">' + dayTxt + ' · ' + (isLocal ? "Your time zone" : offTxt(diff)) + '</div></div>' +
+        '<div style="display:flex;align-items:center;gap:10px"><span class="big" data-tz="' + esc(tz) + '">' + fmtTime(now, tz, true) + '</span>' +
+        (isLocal ? '' : '<button class="btn del small" data-rm="' + esc(tz) + '" aria-label="Remove ' + esc(cityName(tz)) + '">Remove</button>') + '</div></div>';
+    }).join("");
+  }
+  $("worldList").addEventListener("click", function(e){
+    var b = e.target.closest("[data-rm]"); if (!b) return;
+    zones = zones.filter(function(z){ return z !== b.dataset.rm; }); save("zones", zones); renderWorld();
+  });
 
-#### Theme
+  /* ---------- alarms ---------- */
+  $("aTest").onclick = function(){
+    initAudio();
+    if (!audioOn()){ setTimeout(function(){ if (audioOn()) beepBurst(); else setMsg("aMsg", "Your browser is blocking sound. Check that the device isn’t muted, then try again.", true); }, 150); }
+    else beepBurst();
+  };
+  $("aAdd").onclick = function(){
+    initAudio();
+    var t = $("aTime").value, label = $("aLabel").value.trim() || "Alarm";
+    if (!/^\d{2}:\d{2}$/.test(t)){ setMsg("aMsg", "Pick a time for the alarm.", true); return; }
+    if (alarms.some(function(a){ return a.time === t && a.label === label && !a.snooze; })){ setMsg("aMsg", "You already have that alarm.", true); return; }
+    if (alarms.length >= 50){ setMsg("aMsg", "You can have up to 50 alarms. Delete one first.", true); return; }
+    alarms.push({ id: Date.now() + Math.random(), time: t, label: label, on: true, repeat: $("aRepeat").checked, snooze: false });
+    alarms.sort(function(a,b){ return a.time < b.time ? -1 : a.time > b.time ? 1 : 0; });
+    save("alarms", alarms); $("aLabel").value = ""; setMsg("aMsg", "Alarm set for " + fmtHM(t) + ".", false);
+    renderAlarms();
+  };
+  function renderAlarms(){
+    if (!alarms.length){ $("alarmList").innerHTML = '<div class="empty">No alarms yet. Pick a time above and select Set alarm.</div>'; return; }
+    $("alarmList").innerHTML = alarms.map(function(a){
+      return '<div class="item"><div><div class="big" style="' + (a.on ? '' : 'opacity:.45') + '">' + fmtHM(a.time) + '</div><div class="meta">' + esc(a.label) + (a.snooze ? " · Snoozed" : a.repeat ? " · Every day" : " · Once") + '</div></div>' +
+        '<div style="display:flex;gap:8px"><button class="btn ghost small" data-tg="' + a.id + '">' + (a.on ? "Turn off" : "Turn on") + '</button><button class="btn del small" data-dl="' + a.id + '">Delete</button></div></div>';
+    }).join("");
+  }
+  $("alarmList").addEventListener("click", function(e){
+    var tg = e.target.closest("[data-tg]"), dl = e.target.closest("[data-dl]");
+    if (tg){ alarms.forEach(function(a){ if (String(a.id) === tg.dataset.tg) a.on = !a.on; }); }
+    else if (dl){ alarms = alarms.filter(function(a){ return String(a.id) !== dl.dataset.dl; }); }
+    else return;
+    save("alarms", alarms); renderAlarms();
+  });
 
-#### Layout
+  // Checks every minute that passed since the last check, so alarms are not missed when the tab is throttled.
+  var lastMin = Math.floor(Date.now() / 60000);
+  function checkAlarms(){
+    var nowMin = Math.floor(Date.now() / 60000);
+    if (nowMin <= lastMin) return;
+    var start = Math.max(lastMin + 1, nowMin - 10);
+    lastMin = nowMin;
+    var fired = [];
+    for (var m = start; m <= nowMin; m++){
+      var d = new Date(m * 60000), hm = pad(d.getHours()) + ":" + pad(d.getMinutes());
+      alarms.forEach(function(a){ if (a.on && a.time === hm && fired.indexOf(a) === -1) fired.push(a); });
+    }
+    if (!fired.length) return;
+    fired.forEach(function(a){ if (!a.repeat) a.on = false; });
+    alarms = alarms.filter(function(a){ return !(a.snooze && fired.indexOf(a) !== -1); });
+    save("alarms", alarms); renderAlarms();
+    fired.forEach(function(a){ ring(a.label, "It’s " + fmtHM(a.time), a.label, true); });
+  }
 
-Clock type Font Size
+  /* ---------- countdown ---------- */
+  var cMode = "date", cEnd = null, cInfo = "";
+  var dt = new Date(Date.now() + 3600000); dt.setSeconds(0,0);
+  $("cTarget").value = dt.getFullYear() + "-" + pad(dt.getMonth()+1) + "-" + pad(dt.getDate()) + "T" + pad(dt.getHours()) + ":" + pad(dt.getMinutes());
+  function setCMode(m){
+    cMode = m;
+    $("cmDate").className = "btn small" + (m === "date" ? "" : " ghost");
+    $("cmDur").className = "btn small" + (m === "dur" ? "" : " ghost");
+    $("cpDate").classList.toggle("hidden", m !== "date");
+    $("cpDur").classList.toggle("hidden", m !== "dur");
+  }
+  $("cmDate").onclick = function(){ setCMode("date"); };
+  $("cmDur").onclick = function(){ setCMode("dur"); };
+  function num(id, max){ var v = Math.floor(+$(id).value); return isNaN(v) ? 0 : Math.min(Math.max(v, 0), max); }
+  function zero(){ ["cd","ch","cm","cs"].forEach(function(i){ $(i).textContent = "00"; }); }
 
-#### Colors
+  $("cStart").onclick = function(){
+    initAudio();
+    if (cMode === "date"){
+      var t = new Date($("cTarget").value).getTime();
+      if (!$("cTarget").value || isNaN(t)){ setMsg("cLabel", "Pick a valid date and time.", true); return; }
+      if (t <= Date.now()){ setMsg("cLabel", "That time has already passed. Choose a time in the future.", true); return; }
+      cEnd = t; cInfo = "Counting down to " + new Date(t).toLocaleString();
+    } else {
+      var s = num("cH", 9999)*3600 + num("cM", 59)*60 + num("cS", 59);
+      if (s <= 0){ setMsg("cLabel", "Enter a duration above zero.", true); return; }
+      cEnd = Date.now() + s*1000; cInfo = "Counting down " + pad(Math.floor(s/3600)) + ":" + pad(Math.floor(s%3600/60)) + ":" + pad(s%60);
+    }
+    save("countdown", { end: cEnd, info: cInfo });
+    setMsg("cLabel", cInfo, false); renderCount();
+  };
+  $("cReset").onclick = function(){ cEnd = null; save("countdown", null); setMsg("cLabel", "", false); zero(); };
+  function renderCount(){
+    if (cEnd === null) return;
+    var left = Math.max(0, cEnd - Date.now()), s = Math.floor(left/1000);
+    $("cd").textContent = pad(Math.floor(s/86400));
+    $("ch").textContent = pad(Math.floor(s%86400/3600));
+    $("cm").textContent = pad(Math.floor(s%3600/60));
+    $("cs").textContent = pad(s%60);
+    if (left <= 0){
+      cEnd = null; save("countdown", null);
+      setMsg("cLabel", "Time’s up!", false);
+      ring("Time’s up!", "Your countdown has finished.", "Countdown", false);
+    }
+  }
+  // Restore a countdown after a page reload.
+  var saved = load("countdown", null);
+  if (saved && typeof saved.end === "number"){
+    if (saved.end > Date.now()){ cEnd = saved.end; cInfo = String(saved.info || ""); setMsg("cLabel", cInfo, false); }
+    else { save("countdown", null); setMsg("cLabel", "Your last countdown finished while this page was closed.", false); }
+  }
 
-Background Clock face Text and hands Accent Glow
+  /* ---------- cool clock ---------- */
+  var CC_FONTS = {
+    orbitron: '"Orbitron","Segoe UI",system-ui,sans-serif',
+    mono: '"Share Tech Mono","Courier New",monospace',
+    serif: '"Playfair Display",Georgia,"Times New Roman",serif',
+    sans: '"Poppins","Segoe UI",system-ui,sans-serif'
+  };
+  var CC_THEMES = [
+    { id: "midnight", name: "Midnight", bg: "#0b1020", face: "#121a33", ink: "#e8ecff", accent: "#5ea1ff" },
+    { id: "neon", name: "Neon", bg: "#07070d", face: "#0d0d18", ink: "#e6fff9", accent: "#ff2bd6" },
+    { id: "sunset", name: "Sunset", bg: "#2b1055", face: "#3b1a6e", ink: "#ffe9d6", accent: "#ff7a59" },
+    { id: "paper", name: "Paper", bg: "#f2efe6", face: "#fffdf7", ink: "#222222", accent: "#d1342b" },
+    { id: "matrix", name: "Matrix", bg: "#000000", face: "#031403", ink: "#36ff6a", accent: "#36ff6a" },
+    { id: "ocean", name: "Ocean", bg: "#05222b", face: "#0a3a47", ink: "#dffaff", accent: "#2de2c4" },
+    { id: "gold", name: "Gold", bg: "#111111", face: "#1a1a1a", ink: "#f3e2b3", accent: "#d4af37" },
+    { id: "mono", name: "Mono", bg: "#ffffff", face: "#f4f4f4", ink: "#111111", accent: "#111111" }
+  ];
+  var CC_DEFAULTS = { theme: "midnight", mode: "analog", font: "orbitron", size: 80, bg: "#0b1020", face: "#121a33", ink: "#e8ecff", accent: "#5ea1ff",
+                      glow: 40, numerals: "numbers", ticks: "lines", hand: 5, smooth: true, seconds: true, h12: false, date: true };
+  var CC_ROMAN = ["XII","I","II","III","IIII","V","VI","VII","VIII","IX","X","XI"];
+  var ccState = load("coolclock", {});
+  if (!ccState || typeof ccState !== "object") ccState = {};
+  Object.keys(CC_DEFAULTS).forEach(function(k){ if (typeof ccState[k] !== typeof CC_DEFAULTS[k]) ccState[k] = CC_DEFAULTS[k]; });
+  ["bg","face","ink","accent"].forEach(function(k){ if (!/^#[0-9a-fA-F]{6}$/.test(ccState[k])) ccState[k] = CC_DEFAULTS[k]; });
+  if (!CC_FONTS[ccState.font]) ccState.font = "orbitron";
+  if (["analog","digital","both"].indexOf(ccState.mode) === -1) ccState.mode = "analog";
+  if (["numbers","roman","none"].indexOf(ccState.numerals) === -1) ccState.numerals = "numbers";
+  if (["lines","dots","none"].indexOf(ccState.ticks) === -1) ccState.ticks = "lines";
+  ccState.size = Math.min(100, Math.max(35, ccState.size));
+  ccState.glow = Math.min(100, Math.max(0, ccState.glow));
+  ccState.hand = Math.min(9, Math.max(2, ccState.hand));
+  var ccStage = $("coolStage"), ccLastText = "", ccLastDate = "";
 
-#### Analog
+  function ccPol(r, deg){ var a = deg * Math.PI / 180; return [100 + r * Math.sin(a), 100 - r * Math.cos(a)]; }
+  function ccHslHex(h, s, l){
+    s /= 100; l /= 100;
+    var k = function(n){ return (n + h / 30) % 12; }, a = s * Math.min(l, 1 - l);
+    var f = function(n){ var v = l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1))); return pad(Math.round(255 * v).toString(16)); };
+    return "#" + f(0) + f(8) + f(4);
+  }
+  function ccRenderFace(){
+    var h = '<circle cx="100" cy="100" r="96" fill="var(--cface)" stroke="var(--cink)" stroke-opacity=".35" stroke-width="2"/>', i, p, q;
+    if (ccState.ticks !== "none"){
+      for (i = 0; i < 60; i++){
+        var major = i % 5 === 0, deg = i * 6;
+        if (ccState.ticks === "lines"){
+          p = ccPol(90, deg); q = ccPol(major ? 80 : 85, deg);
+          h += '<line x1="' + p[0].toFixed(2) + '" y1="' + p[1].toFixed(2) + '" x2="' + q[0].toFixed(2) + '" y2="' + q[1].toFixed(2) + '" stroke="var(--cink)" stroke-width="' + (major ? 2.2 : 1) + '" stroke-opacity="' + (major ? 1 : 0.5) + '" stroke-linecap="round"/>';
+        } else {
+          p = ccPol(87, deg);
+          h += '<circle cx="' + p[0].toFixed(2) + '" cy="' + p[1].toFixed(2) + '" r="' + (major ? 2.4 : 1.1) + '" fill="var(--cink)" fill-opacity="' + (major ? 1 : 0.5) + '"/>';
+        }
+      }
+    }
+    if (ccState.numerals !== "none"){
+      var rad = ccState.ticks === "none" ? 78 : 68;
+      for (i = 1; i <= 12; i++){
+        p = ccPol(rad, i * 30);
+        h += '<text x="' + p[0].toFixed(2) + '" y="' + p[1].toFixed(2) + '" text-anchor="middle" dominant-baseline="central" fill="var(--cink)" style="font-family:var(--cfont);font-size:' + (ccState.numerals === "roman" ? 11 : 14) + 'px;font-weight:700">' + (ccState.numerals === "roman" ? CC_ROMAN[i % 12] : i) + '</text>';
+      }
+    }
+    $("ccFace").innerHTML = h;
+  }
+  function ccSync(){
+    document.querySelectorAll("[data-cc]").forEach(function(el){
+      var v = ccState[el.dataset.cc];
+      if (el.type === "checkbox") el.checked = !!v; else el.value = v;
+    });
+    document.querySelectorAll("#ccThemes button").forEach(function(b){ b.setAttribute("aria-pressed", b.dataset.id === ccState.theme ? "true" : "false"); });
+  }
+  function ccApply(){
+    var s = ccStage.style;
+    s.setProperty("--cbg", ccState.bg); s.setProperty("--cface", ccState.face); s.setProperty("--cink", ccState.ink); s.setProperty("--caccent", ccState.accent);
+    s.setProperty("--cglow", ccState.glow); s.setProperty("--csize", ccState.size); s.setProperty("--cfont", CC_FONTS[ccState.font]);
+    var an = ccState.mode !== "digital", dg = ccState.mode !== "analog";
+    $("ccAnalog").classList.toggle("hidden", !an);
+    $("ccAnalog").classList.toggle("small", an && dg);
+    $("ccDigital").classList.toggle("hidden", !dg);
+    $("ccDate").classList.toggle("hidden", !ccState.date);
+    $("ccH").setAttribute("stroke-width", ccState.hand * 1.3);
+    $("ccM").setAttribute("stroke-width", ccState.hand);
+    var chars = ccState.seconds ? 8 : 5, cap = ccState.mode === "both" ? 9 : 30;
+    $("ccTime").style.fontSize = "min(calc(var(--csize) * 1cqw / " + (chars * 0.64).toFixed(2) + "), " + cap + "cqw)";
+    ccRenderFace(); ccLastText = ""; ccLastDate = "";
+    ccSync();
+  }
+  document.querySelectorAll("[data-cc]").forEach(function(el){
+    el.addEventListener("input", function(){
+      var k = el.dataset.cc, v;
+      if (el.type === "checkbox") v = el.checked; else if (el.type === "range") v = +el.value; else v = el.value;
+      ccState[k] = v;
+      if (["bg","face","ink","accent"].indexOf(k) !== -1) ccState.theme = "custom";
+      save("coolclock", ccState); ccApply();
+    });
+  });
+  CC_THEMES.forEach(function(t){
+    var b = document.createElement("button");
+    b.dataset.id = t.id; b.textContent = t.name; b.setAttribute("aria-pressed", "false");
+    b.style.background = t.bg; b.style.color = t.accent; b.style.boxShadow = "inset 0 -14px 0 " + t.face;
+    b.onclick = function(){ ccState.theme = t.id; ccState.bg = t.bg; ccState.face = t.face; ccState.ink = t.ink; ccState.accent = t.accent; save("coolclock", ccState); ccApply(); };
+    $("ccThemes").appendChild(b);
+  });
+  $("ccRand").onclick = function(){
+    var h = Math.floor(Math.random() * 360);
+    ccState.theme = "custom";
+    ccState.bg = ccHslHex(h, 40, 8); ccState.face = ccHslHex(h, 40, 14); ccState.ink = ccHslHex(h, 30, 92); ccState.accent = ccHslHex((h + 160) % 360, 90, 60);
+    save("coolclock", ccState); ccApply();
+  };
+  $("ccReset").onclick = function(){ Object.keys(CC_DEFAULTS).forEach(function(k){ ccState[k] = CC_DEFAULTS[k]; }); save("coolclock", ccState); ccApply(); };
+  $("ccFs").onclick = function(){
+    try {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else if (ccStage.requestFullscreen) ccStage.requestFullscreen();
+      else setMsg("ccMsg", "Fullscreen isn’t supported in this browser.", true);
+    } catch(e){ setMsg("ccMsg", "Fullscreen isn’t supported in this browser.", true); }
+  };
+  function ccFrame(){
+    if ($("tab-cool").classList.contains("hidden") && !document.fullscreenElement){ setTimeout(function(){ requestAnimationFrame(ccFrame); }, 500); return; }
+    try {
+      var d = new Date(), ms = d.getMilliseconds();
+      var sec = d.getSeconds() + (ccState.smooth ? ms / 1000 : 0);
+      var min = d.getMinutes() + d.getSeconds() / 60;
+      var hr = d.getHours() % 12 + min / 60;
+      if (ccState.mode !== "digital"){
+        $("ccH").setAttribute("transform", "rotate(" + (hr * 30) + " 100 100)");
+        $("ccM").setAttribute("transform", "rotate(" + (min * 6) + " 100 100)");
+        $("ccS").setAttribute("transform", "rotate(" + (sec * 6) + " 100 100)");
+      }
+      if (ccState.mode !== "analog"){
+        var h = d.getHours(), ap = "";
+        if (ccState.h12){ ap = h >= 12 ? "PM" : "AM"; h = h % 12 || 12; }
+        var txt = (ccState.h12 ? String(h) : pad(h)) + ":" + pad(d.getMinutes()) + (ccState.seconds ? ":" + pad(d.getSeconds()) : "") + (ap ? "|" + ap : "");
+        if (txt !== ccLastText){
+          ccLastText = txt;
+          var parts = txt.split("|");
+          $("ccTime").innerHTML = parts[0] + (parts[1] ? "<small>" + parts[1] + "</small>" : "");
+        }
+        if (ccState.date){
+          var ds = new Intl.DateTimeFormat(undefined, { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(d);
+          if (ds !== ccLastDate){ ccLastDate = ds; $("ccDate").textContent = ds; }
+        }
+      }
+    } catch(e){ console.error(e); }
+    requestAnimationFrame(ccFrame);
+  }
+  ccApply();
+  requestAnimationFrame(ccFrame);
 
-Numerals Tick marks Hand thickness Smooth seconds hand [ ]
+  /* ---------- calendar ---------- */
+  var calNow = new Date();
+  var calSel = { y: calNow.getFullYear(), m: calNow.getMonth(), d: calNow.getDate() };
+  var calY = calSel.y, calM = calSel.m;
+  function calKey(o){ return o.y + "-" + pad(o.m + 1) + "-" + pad(o.d); }
+  function calTarget(){
+    var t = ($("calTime").value || "00:00").split(":");
+    return new Date(calSel.y, calSel.m, calSel.d, +t[0] || 0, +t[1] || 0, 0, 0);
+  }
+  function isoWeek(y, m, d){
+    var dt = new Date(Date.UTC(y, m, d)), day = dt.getUTCDay() || 7;
+    dt.setUTCDate(dt.getUTCDate() + 4 - day);
+    var ys = new Date(Date.UTC(dt.getUTCFullYear(), 0, 1));
+    return Math.ceil(((dt - ys) / 86400000 + 1) / 7);
+  }
+  function renderCal(focusSel){
+    $("calTitle").textContent = new Intl.DateTimeFormat(undefined, { month: "long", year: "numeric" }).format(new Date(calY, calM, 1));
+    var html = "", i;
+    for (i = 0; i < 7; i++) html += '<div class="wd">' + new Intl.DateTimeFormat(undefined, { weekday: "short" }).format(new Date(2023, 0, 1 + i)) + '</div>';
+    var first = new Date(calY, calM, 1).getDay(), days = new Date(calY, calM + 1, 0).getDate(), now = new Date();
+    for (i = 0; i < first; i++) html += '<div></div>';
+    for (var d = 1; d <= days; d++){
+      var isToday = d === now.getDate() && calM === now.getMonth() && calY === now.getFullYear();
+      var isSel = d === calSel.d && calM === calSel.m && calY === calSel.y;
+      html += '<button class="cd' + (isToday ? " today" : "") + (isSel ? " sel" : "") + '" data-d="' + d + '" aria-pressed="' + isSel + '" aria-label="' +
+        new Intl.DateTimeFormat(undefined, { dateStyle: "full" }).format(new Date(calY, calM, d)) + '">' + d + '</button>';
+    }
+    $("calGrid").innerHTML = html;
+    if (focusSel){ var s = $("calGrid").querySelector(".sel"); if (s) s.focus(); }
+  }
+  function renderCalOut(){
+    var t = calTarget();
+    if (isNaN(t.getTime())){ $("calOut").textContent = ""; return; }
+    var diff = t.getTime() - Date.now(), abs = Math.abs(diff), rel;
+    if (abs < 60000) rel = "That is right now.";
+    else {
+      var mins = Math.floor(abs / 60000), dd = Math.floor(mins / 1440), hh = Math.floor(mins % 1440 / 60), mm = mins % 60, parts = [];
+      if (dd) parts.push(dd + (dd === 1 ? " day" : " days"));
+      if (hh) parts.push(hh + " h");
+      if (mm) parts.push(mm + " min");
+      rel = diff > 0 ? "In " + parts.join(" ") : parts.join(" ") + " ago";
+    }
+    var doy = Math.round((Date.UTC(calSel.y, calSel.m, calSel.d) - Date.UTC(calSel.y, 0, 0)) / 86400000);
+    var html = '<div class="hd">' + new Intl.DateTimeFormat(undefined, { dateStyle: "full" }).format(t) + ' at ' + fmtTime(t, localTz, false) + '</div>' +
+      '<div style="margin-top:4px">' + rel + '</div>' +
+      '<div class="meta">Day ' + doy + ' of the year · Week ' + isoWeek(calSel.y, calSel.m, calSel.d) + '</div>';
+    if (zones.length){
+      html += '<div style="margin-top:10px;font-weight:600">At the same moment</div>';
+      zones.forEach(function(tz){
+        var txt = new Intl.DateTimeFormat(undefined, { timeZone: tz, weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hourCycle: h12 ? "h12" : "h23" }).format(t);
+        html += '<div class="item"><div class="meta">' + esc(cityName(tz)) + '</div><div>' + esc(txt) + '</div></div>';
+      });
+    }
+    $("calOut").innerHTML = html;
+  }
+  function calGo(y, m, d){
+    calSel = { y: y, m: m, d: d }; calY = y; calM = m;
+    $("calJump").value = calKey(calSel);
+    renderCal(false); renderCalOut();
+  }
+  $("calGrid").addEventListener("click", function(e){
+    var b = e.target.closest("[data-d]"); if (!b) return;
+    calSel = { y: calY, m: calM, d: +b.dataset.d };
+    $("calJump").value = calKey(calSel);
+    renderCal(true); renderCalOut(); setMsg("calMsg", "", false);
+  });
+  $("calPrev").onclick = function(){ calM--; if (calM < 0){ calM = 11; calY--; } renderCal(false); };
+  $("calNext").onclick = function(){ calM++; if (calM > 11){ calM = 0; calY++; } renderCal(false); };
+  $("calToday").onclick = function(){ var n = new Date(); calGo(n.getFullYear(), n.getMonth(), n.getDate()); };
+  $("calJump").addEventListener("change", function(){
+    var v = $("calJump").value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!v){ setMsg("calMsg", "Pick a valid date.", true); return; }
+    setMsg("calMsg", "", false);
+    calGo(+v[1], +v[2] - 1, +v[3]);
+  });
+  $("calTime").addEventListener("input", renderCalOut);
+  $("calCount").onclick = function(){
+    var t = calTarget();
+    if (isNaN(t.getTime())){ setMsg("calMsg", "Pick a valid time.", true); return; }
+    if (t.getTime() <= Date.now()){ setMsg("calMsg", "That time has already passed. Choose a later date or time.", true); return; }
+    setMsg("calMsg", "", false);
+    $("cTarget").value = t.getFullYear() + "-" + pad(t.getMonth() + 1) + "-" + pad(t.getDate()) + "T" + pad(t.getHours()) + ":" + pad(t.getMinutes());
+    setCMode("date");
+    document.querySelector('.tabs button[data-tab="count"]').click();
+    $("cStart").click();
+  };
+  $("calJump").value = calKey(calSel);
+  renderCal(false); renderCalOut();
 
-#### Digital
+  /* ---------- stopwatch ---------- */
+  var swElapsed = 0, swStart = null, swLaps = [], swTimer = null;
+  var swSaved = load("stopwatch", null);
+  if (swSaved && typeof swSaved.elapsed === "number"){
+    swElapsed = Math.max(0, swSaved.elapsed);
+    swStart = typeof swSaved.start === "number" && swSaved.start <= Date.now() ? swSaved.start : null;
+    swLaps = Array.isArray(swSaved.laps) ? swSaved.laps.filter(function(n){ return typeof n === "number"; }) : [];
+  }
+  function swNow(){ return swElapsed + (swStart !== null ? Date.now() - swStart : 0); }
+  function swFmt(ms){
+    var t = Math.floor(ms / 10), cs = t % 100, s = Math.floor(t / 100) % 60, m = Math.floor(t / 6000) % 60, h = Math.floor(t / 360000);
+    return (h ? pad(h) + ":" : "") + pad(m) + ":" + pad(s) + "." + pad(cs);
+  }
+  function swSave(){ save("stopwatch", { elapsed: swElapsed, start: swStart, laps: swLaps }); }
+  function swRender(){ $("swTime").textContent = swFmt(swNow()); }
+  function swRenderLaps(){
+    var html = "";
+    for (var i = swLaps.length - 1; i >= 0; i--){
+      var prev = i ? swLaps[i-1] : 0;
+      html += '<div class="item"><div class="meta">Lap ' + (i + 1) + '</div><div class="big" style="font-size:1.1rem">' + swFmt(swLaps[i] - prev) + '</div><div class="meta">' + swFmt(swLaps[i]) + '</div></div>';
+    }
+    $("swLaps").innerHTML = html;
+  }
+  function swButtons(){
+    var running = swStart !== null;
+    $("swStart").textContent = running ? "Stop" : (swElapsed > 0 ? "Resume" : "Start");
+    $("swStart").className = running ? "btn del" : "btn";
+    $("swLap").disabled = !running;
+    $("swReset").disabled = running || (swElapsed === 0 && !swLaps.length);
+  }
+  function swLoop(){ if (!swTimer) swTimer = setInterval(swRender, 31); }
+  function swHalt(){ if (swTimer){ clearInterval(swTimer); swTimer = null; } }
+  $("swStart").onclick = function(){
+    if (swStart !== null){ swElapsed += Date.now() - swStart; swStart = null; swHalt(); }
+    else { swStart = Date.now(); swLoop(); }
+    swSave(); swButtons(); swRender();
+  };
+  $("swLap").onclick = function(){
+    if (swStart === null) return;
+    if (swLaps.length >= 200) swLaps.shift();
+    swLaps.push(swNow()); swSave(); swRenderLaps();
+  };
+  $("swReset").onclick = function(){
+    swElapsed = 0; swStart = null; swLaps = []; swHalt();
+    swSave(); swButtons(); swRender(); swRenderLaps();
+  };
+  if (swStart !== null) swLoop();
+  swButtons(); swRender(); swRenderLaps();
 
-Show seconds [ ] 12-hour format [ ] Show date [ ]
+  /* ---------- banner ---------- */
+  function renderBanner(){
+    var msgs = [];
+    var needsSound = alarms.some(function(a){ return a.on; }) || cEnd !== null;
+    if (needsSound && !audioOn()) msgs.push("Sound is off until you tap or click anywhere on this page. Do that once so alarms can ring.");
+    if (!storageOk) msgs.push("This browser can’t save your alarms and cities, so they will be lost when you close the page.");
+    $("banner").textContent = msgs.join(" ");
+    $("banner").classList.toggle("hidden", !msgs.length);
+  }
 
-## Alarm
+  /* ---------- main tick ---------- */
+  function tick(){
+    var now = new Date();
+    $("nowT").textContent = fmtTime(now, localTz, true);
+    $("nowD").textContent = fmtDate(now, localTz) + " · " + localTz.replace(/_/g, " ");
+    document.querySelectorAll("[data-tz]").forEach(function(el){ el.textContent = fmtTime(now, el.dataset.tz, true); });
+    checkAlarms();
+    renderCount();
+    renderBanner();
+    if (!$("tab-cal").classList.contains("hidden")) renderCalOut();
+  }
+  function safeTick(){ try { tick(); } catch(e){ console.error(e); } }
+
+  renderWorld(); renderAlarms(); safeTick();
+  setInterval(safeTick, 500);
+  setInterval(function(){ try { renderWorld(); } catch(e){ console.error(e); } }, 60000);
+  document.addEventListener("visibilitychange", function(){ if (!document.hidden) { safeTick(); try { renderWorld(); } catch(e){} } });
+})();
+</script>
+</body>
+</html>
